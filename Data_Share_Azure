@@ -1,0 +1,23 @@
+flowchart LR
+  subgraph Producer Tenant (A)
+    ADF[ADF Managed VNet IR\n(Managed Private Endpoints)]
+    MPE1[Managed Private Endpoint\n→ PLS in Tenant B]
+    DNSA[Private DNS / Forwarders\nprivatelink.<region>.azmk8s.io or custom FQDN]
+  end
+
+  subgraph Consumer Tenant (B)
+    subgraph Consumer VNet
+      PLS[Private Link Service\n(Standard LB + NAT rules)]
+      GATE[Storage Gateway\n(NVA/NGINX/API on VM/AKS)]
+      PE2[(Private Endpoint\nfor Storage)]
+      DNSB[Private DNS Zones\nprivatelink.blob/dfs.core.windows.net]
+      SA[(Consumer Storage\n(Blob/ADLS Gen2))]
+    end
+  end
+
+  ADF -->|MPE resolves to PLS| MPE1
+  MPE1 -->|Private Link| PLS
+  PLS -->|LB rule| GATE
+  GATE -->|HTTPS/SAS/OAuth| PE2
+  PE2 --> SA
+  ADF -. control plane .->|Linked Services / MSI| SA
